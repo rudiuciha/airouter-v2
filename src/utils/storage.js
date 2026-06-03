@@ -73,6 +73,7 @@ function mergeEnvKeys(providers) {
     kimi:       process.env.KIMI_API_KEY,
     together:   process.env.TOGETHER_API_KEY,
     qwen:       process.env.QWEN_API_KEY,
+    mimo:       process.env.MIMO_API_KEY,
   };
   return providers.map(p => {
     const envKey = envMap[p.id];
@@ -163,6 +164,19 @@ function buildDefaultProviders() {
       signupUrl: 'https://build.nvidia.com',
       notes: 'No credit card. 40 RPM, no daily token cap.',
       rateLimits: { rpm: 40, tpm: 80000 },
+    },
+    // ── TIER 1.5: Token Plan / Pay-as-you-go ──
+    {
+      id: 'mimo', name: 'Xiaomi MiMo', prefix: 'mm', tier: 2,
+      enabled: true, free: false,
+      baseUrl: process.env.MIMO_BASE_URL || 'https://api.xiaomimimo.com/v1',
+      apiKey: process.env.MIMO_API_KEY || '',
+      models: ['mimo-v2.5-pro', 'mimo-v2.5-flash', 'mimo-v2.5', 'mimo-v2.5-tts'],
+      defaultModel: 'mimo-v2.5-pro',
+      priceIn: 0.5, priceOut: 2.0,
+      signupUrl: 'https://platform.xiaomimimo.com',
+      notes: 'Token Plan available. Pay-as-you-go or subscription.',
+      rateLimits: { rpm: 60, tpm: 200000 },
     },
     // ── TIER 2: Paid but cheap ──
     {
