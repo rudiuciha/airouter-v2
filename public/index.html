@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AIRouter v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f5f0eb;--bg2:rgba(255,252,248,.92);--bg3:#ede8e3;--bd:rgba(0,0,0,.08);
+  --tx:#2c2416;--mu:#8a7e72;--ac:#00d4ff;--ac2:#7c3aed;--gr:#00e676;
+  --ye:#ffd740;--re:#ff5252;--or:#ff9100;
+  --glass:rgba(255,252,248,.85);--blur:blur(20px);
+  --radius:14px;--radius-sm:10px;
+  --shadow:0 8px 32px rgba(0,0,0,.08);
+  --shadow-sm:0 2px 12px rgba(0,0,0,.06);
+  --transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+html{font-size:14px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(180,140,100,.06) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(160,120,80,.05) 0%,transparent 50%),radial-gradient(ellipse at 50% 80%,rgba(200,160,100,.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(0,0,0,.04) 1px,transparent 1px);background-size:24px 24px;pointer-events:none;z-index:0;opacity:.5}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.15)}
+a{color:var(--ac);text-decoration:none}
+input,select{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:10px 14px;color:var(--tx);font-size:.9rem;font-family:inherit;outline:none;width:100%;transition:var(--transition)}
+input:focus,select:focus{border-color:rgba(140,100,60,.4);box-shadow:0 0 0 3px rgba(140,100,60,.08)}
+button{cursor:pointer;font-family:inherit;border:none;transition:var(--transition);outline:none}
+code{background:var(--bg3);padding:2px 8px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:.82rem;border:1px solid var(--bd)}
+
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
+#login.hide{display:none}
+.lbox{width:400px;background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--bd);border-radius:20px;padding:44px;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.lbox::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:conic-gradient(from 0deg,transparent,rgba(140,100,60,.08),transparent,rgba(160,120,80,.06),transparent);animation:spin 8s linear infinite;opacity:.5}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lbox>*{position:relative;z-index:1}
+.lbox .logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}
+.logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 30px rgba(0,212,255,.3)}
+.logo-txt{font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--ac),var(--ac2),var(--gr));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lbox p{font-size:13px;color:var(--mu);margin-bottom:28px}
+.lbox input{margin-bottom:12px;text-align:center;font-size:1rem}
+.lbox .err{color:var(--re);font-size:12.5px;min-height:20px;margin-top:8px}
+.lbox .hint{font-size:11.5px;color:var(--mu);margin-top:16px}
+
+/* ── LAYOUT ── */
+.wrap{display:flex;height:100vh;position:relative;z-index:1}
+
+/* ── SIDEBAR ── */
+.sidebar{width:230px;background:var(--glass);backdrop-filter:var(--blur);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
+.s-logo{padding:24px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:12px}
+.s-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 20px rgba(0,212,255,.25)}
+.s-logo-txt{font-size:20px;font-weight:900;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.s-nav{padding:16px 12px;flex:1;display:flex;flex-direction:column;gap:2px}
+.s-lbl{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--mu);text-transform:uppercase;padding:10px 10px 4px}
+.s-item{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:var(--radius-sm);color:var(--mu);font-size:13.5px;font-weight:600;transition:var(--transition);cursor:pointer;position:relative;border:1px solid transparent}
+.s-item:hover{background:rgba(0,0,0,.04);color:var(--tx)}
+.s-item.on{background:rgba(140,100,60,.08);color:#8a6030;border-color:rgba(140,100,60,.15)}
+.s-item.on::before{content:'';position:absolute;left:-1px;top:6px;bottom:6px;width:3px;background:#a07040;border-radius:0 3px 3px 0;box-shadow:0 0 10px rgba(140,100,60,.3)}
+.s-item .ic{font-size:15px;width:18px;text-align:center}
+.s-foot{padding:16px 12px;border-top:1px solid var(--bd)}
+.s-status{display:flex;align-items:center;gap:9px;padding:10px 14px;background:rgba(60,160,80,.06);border:1px solid rgba(60,160,80,.15);border-radius:var(--radius-sm);font-size:11.5px;color:#3ca050}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--gr);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(60,160,80,.4)}50%{box-shadow:0 0 0 6px rgba(60,160,80,0)}}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--bd);background:rgba(245,240,235,.9);backdrop-filter:blur(12px);flex-shrink:0}
+.topbar h1{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.topbar p{font-size:12px;color:var(--mu);margin-top:2px}
+.topbar-r{display:flex;align-items:center;gap:10px}
+.req-badge{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mu);padding:6px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--bd)}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:28px}
+.page{display:none;animation:fadeIn .3s ease}
+.page.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:700}
+.btn-g{background:var(--bg3);color:var(--mu);border:1px solid var(--bd)}
+.btn-g:hover{color:var(--tx);border-color:rgba(0,0,0,.12)}
+.btn-p{background:linear-gradient(135deg,var(--ac),#0094b3);color:#000;box-shadow:0 0 20px rgba(0,212,255,.2)}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(0,212,255,.35)}
+.btn-d{background:rgba(255,82,82,.1);color:var(--re);border:1px solid rgba(255,82,82,.15)}
+.btn-d:hover{background:rgba(255,82,82,.2)}
+.btn-sm{padding:6px 13px;font-size:12px}
+
+/* ── CARDS ── */
+.card{background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--bd);border-radius:var(--radius);padding:22px;transition:var(--transition)}
+.card:hover{border-color:rgba(0,0,0,.12);box-shadow:var(--shadow-sm)}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.ct{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.bg{background:rgba(0,230,118,.1);color:var(--gr);border:1px solid rgba(0,230,118,.2)}
+.bb{background:rgba(0,212,255,.1);color:var(--ac);border:1px solid rgba(0,212,255,.2)}
+.by{background:rgba(255,215,64,.1);color:var(--ye);border:1px solid rgba(255,215,64,.2)}
+.br{background:rgba(255,82,82,.1);color:var(--re);border:1px solid rgba(255,82,82,.2)}
+.bmu{background:rgba(90,99,133,.15);color:var(--mu);border:1px solid rgba(90,99,133,.2)}
+
+/* ── STATS ── */
+.srow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.sc{background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--bd);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:var(--transition)}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:rgba(255,255,255,.1)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0}
+.sc.bl::before{background:linear-gradient(90deg,var(--ac),rgba(0,212,255,.2))}
+.sc.pu::before{background:linear-gradient(90deg,var(--ac2),rgba(124,58,237,.2))}
+.sc.gr::before{background:linear-gradient(90deg,var(--gr),rgba(0,230,118,.2))}
+.sc.ye::before{background:linear-gradient(90deg,var(--ye),rgba(255,215,64,.2))}
+.slbl{font-size:10px;color:var(--mu);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.sval{font-size:30px;font-weight:900;letter-spacing:-1.5px;font-family:'JetBrains Mono',monospace}
+.ssub{font-size:11.5px;color:var(--mu);margin-top:6px}
+
+/* ── ENDPOINT ── */
+.ep{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ep-url{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ac);word-break:break-all}
+
+/* ── TIER FLOW ── */
+.flow{display:flex;align-items:stretch;gap:0}
+.ftier{flex:1;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:16px;position:relative;transition:var(--transition)}
+.ftier.act{border-color:rgba(0,212,255,.25);box-shadow:0 0 20px rgba(0,212,255,.05)}
+.fl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);font-weight:700;margin-bottom:8px}
+.fn{font-size:14px;font-weight:700;margin-bottom:4px}
+.fs{font-size:11.5px;color:var(--mu)}
+.farr{color:rgba(255,255,255,.1);font-size:20px;padding:0 10px;display:flex;align-items:center}
+.fdot{width:9px;height:9px;border-radius:50%;position:absolute;top:14px;right:14px}
+
+/* ── LOG ── */
+.logbox{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:14px;height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;font-family:'JetBrains Mono',monospace;font-size:11px}
+.logbox.full{height:calc(100vh - 240px)}
+.le{display:flex;gap:10px;line-height:1.7;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.lt{color:var(--mu);flex-shrink:0}
+.lok{color:var(--gr);flex-shrink:0;font-weight:600}
+.lw{color:var(--ye);flex-shrink:0;font-weight:600}
+.le2{color:var(--re);flex-shrink:0;font-weight:600}
+.li{color:var(--ac);flex-shrink:0;font-weight:600}
+.lm{color:var(--tx)}
+
+/* ── PROVIDER CARDS ── */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.pcard{background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--bd);border-radius:var(--radius);padding:20px;transition:var(--transition)}
+.pcard:hover{border-color:rgba(0,0,0,.12);box-shadow:var(--shadow-sm)}
+.pcard.free-card{border-color:rgba(0,230,118,.12)}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.pav{width:44px;height:44px;border-radius:12px;background:var(--bg3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.pn{font-size:15px;font-weight:700}
+.pm{font-size:11.5px;color:var(--mu);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.prow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:12.5px}
+.prow:last-child{border-bottom:none}
+.prow label{color:var(--mu)}
+.pac{margin-top:14px;display:flex;gap:8px}
+.pmsg{font-size:12px;margin-top:8px;min-height:16px}
+
+/* ── FREE ONBOARD ── */
+.free-banner{background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(124,58,237,.05),rgba(0,230,118,.03));border:1px solid rgba(0,212,255,.15);border-radius:var(--radius);padding:20px 24px;margin-bottom:22px}
+.free-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:16px}
+.free-item{background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:var(--transition)}
+.free-item:hover{border-color:rgba(0,0,0,.12)}
+.free-item.has-key{border-color:rgba(0,230,118,.2);background:rgba(0,230,118,.03)}
+
+/* ── TOGGLE ── */
+.tog{position:relative;width:38px;height:22px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-sl{position:absolute;inset:0;background:rgba(0,0,0,.12);border-radius:11px;cursor:pointer;transition:var(--transition)}
+.tog-sl::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:var(--transition);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.tog input:checked+.tog-sl{background:var(--ac)}
+.tog input:checked+.tog-sl::before{transform:translateX(16px)}
+
+/* ── SETTINGS ── */
+.sett-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04);gap:16px}
+.sett-row:last-child{border-bottom:none;padding-bottom:0}
+.sett-name{font-size:14px;font-weight:600}
+.sett-desc{font-size:12px;color:var(--mu);margin-top:3px}
+
+/* ── RING PROGRESS ── */
+.ring-wrap{display:flex;justify-content:center;padding:20px 0}
+.ring{position:relative;width:120px;height:120px}
+.ring svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--bd);stroke-width:8}
+.ring-fg{fill:none;stroke:var(--ac);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+.ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-val{font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--ac)}
+.ring-lbl{font-size:10px;color:var(--mu);margin-top:2px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:12px 20px;font-size:13px;font-weight:600;z-index:1000;animation:toastIn .3s ease;box-shadow:var(--shadow)}
+.toast.ok{border-color:rgba(0,230,118,.3);color:var(--gr)}
+.toast.err{border-color:rgba(255,82,82,.3);color:var(--re)}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:1100px){.srow{grid-template-columns:repeat(2,1fr)}.g2,.g3{grid-template-columns:1fr}.flow{flex-direction:column}.farr{transform:rotate(90deg);justify-content:center;padding:6px 0}}
+/* ── MOBILE HAMBURGER ── */
+.hamburger{display:none;width:36px;height:36px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.hamburger span{display:block;width:18px;height:2px;background:var(--tx);border-radius:2px;position:relative;transition:var(--transition)}
+.hamburger span::before,.hamburger span::after{content:'';position:absolute;width:100%;height:2px;background:var(--tx);border-radius:2px;left:0;transition:var(--transition)}
+.hamburger span::before{top:-6px}.hamburger span::after{bottom:-6px}
+.hamburger.open span{background:transparent}
+.hamburger.open span::before{top:0;transform:rotate(45deg)}.hamburger.open span::after{bottom:0;transform:rotate(-45deg)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;backdrop-filter:blur(4px)}
+.sidebar-overlay.show{display:block}
+
+
+
+@media(max-width:700px){
+.hamburger{display:flex}
+.sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:100;width:250px;transition:left .3s ease}
+.sidebar.open{left:0}
+.content{padding:16px}
+.topbar{padding:12px 16px}
+.srow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lbox">
+    <div class="logo"><div class="logo-icon">⚡</div><span class="logo-txt">AIRouter</span></div>
+    <p>Smart Multi-Provider AI Gateway</p>
+    <input type="password" id="lpass" placeholder="Enter password" autocomplete="current-password">
+    <button class="btn btn-p" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()">Unlock Dashboard</button>
+    <div class="err" id="lerr"></div>
+    <p class="hint">Default: <code>admin123</code> · Change in Settings</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="wrap">
+  <aside class="sidebar">
+    <div class="s-logo">
+      <div class="s-logo-icon">⚡</div>
+      <span class="s-logo-txt">AIRouter</span>
+    </div>
+    <nav class="s-nav">
+      <div class="s-lbl">Main</div>
+      <div class="s-item on" data-p="dash" onclick="nav(this)"><span class="ic">📊</span> Dashboard</div>
+      <div class="s-item" data-p="provs" onclick="nav(this)"><span class="ic">◈</span> Providers</div>
+      <div class="s-item" data-p="apikeys" onclick="nav(this)"><span class="ic">🔑</span> API Keys</div>
+      <div class="s-item" data-p="usage" onclick="nav(this)"><span class="ic">📊</span> Usage</div>
+      <div class="s-item" data-p="logs" onclick="nav(this)"><span class="ic">📋</span> Request Log</div>
+      <div class="s-item" data-p="settings" onclick="nav(this)"><span class="ic">⚙️</span> Settings</div>
+      <div class="s-lbl" style="margin-top:12px">Quick Links</div>
+      <a class="s-item" href="https://openrouter.ai" target="_blank"><span class="ic">🌐</span> OpenRouter</a>
+      <a class="s-item" href="https://aistudio.google.com" target="_blank"><span class="ic">🌀</span> Gemini</a>
+      <a class="s-item" href="https://console.groq.com" target="_blank"><span class="ic">🚀</span> Groq</a>
+    </nav>
+    <div class="s-foot">
+      <div class="s-status" id="srv-status"><div class="dot"></div><span>Connecting…</span></div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <div><h1 id="pg-title">Dashboard</h1><p id="pg-sub">Real-time routing monitor</p></div>
+      <div class="topbar-r">
+        <div class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span></div>
+        <span class="req-badge" id="req-badge">— req</span>
+        <button class="btn btn-g btn-sm" onclick="refresh()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="page-dash" class="page on">
+        <div class="srow">
+          <div class="sc bl"><div class="slbl">Requests</div><div class="sval" id="s-req">—</div><div class="ssub">Total since startup</div></div>
+          <div class="sc pu"><div class="slbl">Tokens</div><div class="sval" id="s-tok">—</div><div class="ssub">Input + Output</div></div>
+          <div class="sc gr"><div class="slbl">Providers</div><div class="sval" id="s-prov">—</div><div class="ssub">Active / total</div></div>
+          <div class="sc ye"><div class="slbl">Cost</div><div class="sval" id="s-cost">—</div><div class="ssub">USD this session</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="ch"><div class="ct">🔌 OpenAI-Compatible Endpoint</div><span class="badge bg">● Live</span></div>
+          <div class="ep" style="margin-bottom:10px">
+            <span class="ep-url" id="ep-url">http://localhost:20130/v1</span>
+            <button class="btn btn-g btn-sm" onclick="copyEp(this)">📋 Copy</button>
+          </div>
+          <div style="font-size:12px;color:var(--mu)">Set as <code>OPENAI_BASE_URL</code> in Cursor · Cline · Claude Code · Aider · OpenCode</div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="ch"><div class="ct">🔀 Fallback Routing</div><span class="badge bb">Auto</span></div>
+          <div class="flow" id="tier-flow">
+            <div class="ftier act" id="t1"><div class="fdot" style="background:var(--gr);box-shadow:0 0 10px var(--gr)"></div><div class="fl">Tier 1 · Free</div><div class="fn" id="t1-names">—</div><div class="fs">No cost · Priority</div></div>
+            <div class="farr">→</div>
+            <div class="ftier" id="t2"><div class="fdot" style="background:var(--ye)"></div><div class="fl">Tier 2 · Cheap paid</div><div class="fn" id="t2-names">—</div><div class="fs">$0.01–3.00 / 1M</div></div>
+            <div class="farr">→</div>
+            <div class="ftier" id="t3"><div class="fdot" style="background:var(--mu)"></div><div class="fl">Tier 3 · Optional</div><div class="fn" id="t3-names">—</div><div class="fs">Fallback only</div></div>
+          </div>
+        </div>
+
+        <div class="g3">
+          <div class="card">
+            <div class="ch"><div class="ct">📋 Live Request Log</div><span class="badge bg">● Live</span></div>
+            <div class="logbox" id="dash-log"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="card">
+              <div class="ch"><div class="ct">📊 By Provider</div></div>
+              <div id="prov-chart"><div style="color:var(--mu);font-size:12px">No data yet…</div></div>
+            </div>
+            <div class="card">
+              <div class="ch"><div class="ct">🗜️ RTK Saved</div></div>
+              <div class="ring-wrap">
+                <div class="ring">
+                  <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                    <circle class="ring-fg" id="rtk-ring" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"/>
+                  </svg>
+                  <div class="ring-txt">
+                    <div class="ring-val" id="rtk-pct">0%</div>
+                    <div class="ring-lbl">compressed</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROVIDERS -->
+      <div id="page-provs" class="page">
+        <div class="free-banner">
+          <div style="font-size:15px;font-weight:700">🎁 Free Providers — No Credit Card Needed</div>
+          <div style="font-size:12.5px;color:var(--mu);margin-top:4px">Sign up for any of these to start using AIRouter immediately.</div>
+          <div class="free-grid" id="free-grid">Loading…</div>
+        </div>
+        <div class="pgrid" id="prov-grid">Loading…</div>
+      </div>
+
+      <!-- API KEYS -->
+      <div id="page-apikeys" class="page">
+        <div class="card" style="max-width:900px">
+          <div class="ch">
+            <div class="ct">🔑 API Keys</div>
+            <button class="btn btn-p btn-sm" onclick="showNewKeyForm()">+ New Key</button>
+          </div>
+          <div style="font-size:12.5px;color:var(--mu);margin-bottom:18px">
+            API keys authenticate requests to the <code>/v1</code> proxy endpoint. Send requests with <code>Authorization: Bearer &lt;ke...ode> header.
+          </div>
+          <div id="newkey-form" style="display:none;background:var(--bg);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:18px;margin-bottom:18px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px">Create New API Key</div>
+            <input type="text" id="newkey-name" placeholder="Key name (e.g. Hermes, Cursor, CI)" style="margin-bottom:12px">
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-p btn-sm" onclick="createApiKey()">Generate Key</button>
+              <button class="btn btn-g btn-sm" onclick="hideNewKeyForm()">Cancel</button>
+            </div>
+          </div>
+          <div id="newkey-display" style="display:none;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.2);border-radius:var(--radius-sm);padding:18px;margin-bottom:18px">
+            <div style="font-size:14px;font-weight:700;color:var(--gr);margin-bottom:6px">✓ API Key Created</div>
+            <div style="font-size:12px;color:var(--mu);margin-bottom:12px">Copy this key now — it won't be shown again!</div>
+            <div class="ep"><span class="ep-url" id="newkey-value" style="color:var(--gr);user-select:all"></span><button class="btn btn-g btn-sm" onclick="copyNewKey(this)">📋 Copy</button></div>
+          </div>
+          <div id="apikeys-list">Loading…</div>
+        </div>
+      </div>
+
+      <!-- LOGS -->
+      <div id="page-logs" class="page">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">📋 Full Request Log</div>
+            <div style="display:flex;gap:8px">
+              <select id="log-filter" style="width:auto;padding:6px 12px;font-size:12px" onchange="filterLogs()">
+                <option value="">All</option><option value="ok">OK</option><option value="warn">WARN</option><option value="err">ERR</option>
+              </select>
+              <button class="btn btn-g btn-sm" onclick="loadLogs()">↻</button>
+              <button class="btn btn-g btn-sm" onclick="clearLogView()">Clear</button>
+            </div>
+          </div>
+          <div class="logbox full" id="full-log"></div>
+        </div>
+      </div>
+
+
+      <!-- USAGE -->
+      <div id="page-usage" class="page">
+        <div class="srow" style="margin-bottom:20px">
+          <div class="sc bl"><div class="slbl">Total Requests</div><div class="sval" id="u-req">—</div><div class="ssub">Since startup</div></div>
+          <div class="sc pu"><div class="slbl">Total Tokens</div><div class="sval" id="u-tok">—</div><div class="ssub">Input + Output</div></div>
+          <div class="sc gr"><div class="slbl">Avg Latency</div><div class="sval" id="u-lat">—</div><div class="ssub">ms per request</div></div>
+          <div class="sc ye"><div class="slbl">Est. Cost</div><div class="sval" id="u-cost">—</div><div class="ssub">USD this session</div></div>
+        </div>
+
+        <div class="g2">
+          <div class="card">
+            <div class="ch"><div class="ct">📊 Requests by Provider</div></div>
+            <div id="u-prov-list" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct">📈 Token Breakdown</div></div>
+            <div id="u-tok-chart" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="ch"><div class="ct">⏱️ Request History</div>
+            <div style="display:flex;gap:8px">
+              <select id="u-time" style="width:auto;padding:6px 12px;font-size:12px" onchange="loadUsage()">
+                <option value="1h">Last 1 hour</option>
+                <option value="6h">Last 6 hours</option>
+                <option value="24h" selected>Last 24 hours</option>
+                <option value="7d">Last 7 days</option>
+              </select>
+            </div>
+          </div>
+          <div id="u-timeline" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+
+        <div class="g2" style="margin-top:18px">
+          <div class="card">
+            <div class="ch"><div class="ct">🏆 Top Models</div></div>
+            <div id="u-models" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct">📋 Recent Errors</div></div>
+            <div id="u-errors" style="display:flex;flex-direction:column;gap:4px;font-size:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="page-settings" class="page">
+        <div class="g2" style="max-width:900px">
+          <div class="card">
+            <div class="ch"><div class="ct">⚙️ Routing Settings</div></div>
+            <div id="sett-form"></div>
+            <button class="btn btn-p" style="margin-top:18px;width:100%;justify-content:center;padding:11px" onclick="saveSettings()">Save Settings</button>
+            <div id="sett-msg" style="font-size:12.5px;margin-top:8px;min-height:18px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="card">
+              <div class="ch"><div class="ct">🔑 Change Password</div></div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <input type="password" id="pw1" placeholder="Current password">
+                <input type="password" id="pw2" placeholder="New password (min 8 chars)">
+                <button class="btn btn-p" onclick="changePw()" style="justify-content:center">Update Password</button>
+                <div id="pw-msg" style="font-size:12.5px;min-height:18px"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ch"><div class="ct">📡 Connection Info</div></div>
+              <div id="conn-info"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ──
+let TOKEN = localStorage.getItem('ar_tok') || '';
+let allLogs = [], allProviders = [], settingsData = {};
+const $ = id => document.getElementById(id);
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(n);
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Toast ──
+function toast(msg, type) {
+  type = type || 'ok';
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; setTimeout(function() { el.remove(); }, 300); }, 3000);
+}
+
+// ── API ──
+async function api(path, opts) {
+  opts = opts || {};
+  const r = await fetch(path, Object.assign({}, opts, {
+    headers: Object.assign({ 'Content-Type':'application/json', 'Authorization':'Bearer ' + TOKEN }, opts.headers || {}),
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  }));
+  if (r.status === 401) { logout(); return null; }
+  return r.json().catch(function() { return null; });
+}
+
+function logout() { TOKEN = ''; localStorage.removeItem('ar_tok'); $('login').classList.remove('hide'); }
+
+async function doLogin() {
+  $('lerr').textContent = '';
+  const r = await fetch('/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:$('lpass').value}) }).then(function(x){return x.json()}).catch(function(){return {error:'Network error'}});
+  if (r.token) { TOKEN = r.token; localStorage.setItem('ar_tok', TOKEN); $('login').classList.add('hide'); toast('Welcome back!'); refresh(); }
+  else $('lerr').textContent = r.error || 'Login failed';
+}
+$('lpass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+
+window.addEventListener('DOMContentLoaded', function() {
+  $('ep-url').textContent = location.origin + '/v1';
+  if (TOKEN) { $('login').classList.add('hide'); refresh(); }
+  setInterval(function() { if (TOKEN) { loadStats(); pollLogs(); } }, 5000);
+});
+
+
+// ── Mobile Sidebar ──
+function toggleSidebar() {
+  var sb = document.querySelector('.sidebar');
+  var ov = document.getElementById('sidebar-overlay');
+  var hb = document.getElementById('hamburger');
+  sb.classList.toggle('open');
+  ov.classList.toggle('show');
+  hb.classList.toggle('open');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+  document.getElementById('hamburger').classList.remove('open');
+}
+// ── Nav ──
+var titles = {
+  dash: ['Dashboard','Real-time routing monitor'],
+  provs: ['Providers','Manage provider API keys'],
+  apikeys: ['API Keys','Manage proxy access keys'],
+  usage: ['Usage','Token & request analytics'],
+  logs: ['Request Log','Full audit trail'],
+  settings: ['Settings','Configure behavior']
+};
+function nav(el) {
+  document.querySelectorAll('.s-item').forEach(function(x) { x.classList.remove('on'); });
+  document.querySelectorAll('.page').forEach(function(x) { x.classList.remove('on'); });
+  if (el) el.classList.add('on');
+  var p = el && el.dataset && el.dataset.p; if (!p) return;
+  var page = $('page-' + p); if (page) page.classList.add('on');
+  var t = titles[p] || [p, ''];
+  $('pg-title').textContent = t[0]; $('pg-sub').textContent = t[1];
+  closeSidebar();
+  if (p === 'provs') loadProviders();
+  if (p === 'apikeys') loadApiKeys();
+  if (p === 'usage') loadUsage();
+  if (p === 'logs') loadLogs();
+  if (p === 'settings') loadSettings();
+}
+
+// ── Refresh ──
+async function refresh() { await Promise.all([loadStats(), pollLogs(), checkStatus()]); }
+
+async function checkStatus() {
+  var d = await api('/api/status'); if (!d) return;
+  var en = (d.providers && d.providers.enabled) || 0;
+  var fr = (d.providers && d.providers.free) || 0;
+  $('srv-status').innerHTML = '<div class="dot"></div><span>:' + d.port + ' · ' + en + ' active · ' + fr + ' free</span>';
+}
+
+// ── Stats ──
+async function loadStats() {
+  var results = await Promise.all([api('/api/stats'), api('/api/status')]);
+  var st = results[0], status = results[1];
+  if (!st) return;
+  $('s-req').textContent = fmt(st.totalRequests || 0);
+  $('s-tok').textContent = fmt((st.totalTokensIn || 0) + (st.totalTokensOut || 0));
+  var en = (status && status.providers && status.providers.enabled) || 0;
+  var to = (status && status.providers && status.providers.total) || 0;
+  $('s-prov').textContent = en + '/' + to;
+  $('s-cost').textContent = '$' + (st.costUSD || 0).toFixed(3);
+  $('req-badge').textContent = fmt(st.totalRequests || 0) + ' req';
+
+  var saved = st.totalSaved || 0;
+  var totalIn = st.totalTokensIn || 1;
+  var pct = Math.min(Math.round(saved / (totalIn + saved) * 100) || 0, 99);
+  $('rtk-pct').textContent = pct + '%';
+  var circ = 2 * Math.PI * 50;
+  $('rtk-ring').style.strokeDashoffset = circ - (circ * pct / 100);
+
+  var bp = st.byProvider || {};
+  var entries = Object.entries(bp).sort(function(a, b) { return b[1].requests - a[1].requests; });
+  var maxR = Math.max.apply(null, entries.map(function(e) { return e[1].requests; }).concat([1]));
+  var cols = ['#00d4ff','#7c3aed','#00e676','#ffd740','#ff9100','#ff5252'];
+  if (entries.length) {
+    $('prov-chart').innerHTML = entries.slice(0, 6).map(function(pair, i) {
+      var id = pair[0], v = pair[1];
+      var w = Math.round(v.requests / maxR * 100);
+      return '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:12px"><span style="width:36px;font-family:JetBrains Mono,monospace;color:var(--mu);flex-shrink:0">' + esc(id.slice(0,4)) + '</span><div style="flex:1;height:7px;background:var(--bd);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + cols[i % cols.length] + ';width:' + w + '%;transition:width .5s"></div></div><span style="width:32px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--mu)">' + v.requests + '</span></div>';
+    }).join('');
+  } else {
+    $('prov-chart').innerHTML = '<div style="color:var(--mu);font-size:12px">No requests yet</div>';
+  }
+  updateTierNames();
+}
+
+function updateTierNames() {
+  if (!allProviders.length) return;
+  [1,2,3].forEach(function(t) {
+    var names = allProviders.filter(function(p) { return p.tier === t && p.enabled && p.hasKey; }).map(function(p) { return p.name.split(' ')[0]; });
+    var el = $('t' + t + '-names');
+    if (el) el.textContent = names.length ? names.slice(0,3).join(' / ') : '(none set)';
+  });
+}
+
+
+// ── Usage ──
+async function loadUsage() {
+  var results = await Promise.all([api('/api/stats'), api('/api/stats/logs?limit=500')]);
+  var st = results[0], logs = results[1];
+  if (!st) return;
+
+  var totalReq = st.totalRequests || 0;
+  var totalTokIn = st.totalTokensIn || 0;
+  var totalTokOut = st.totalTokensOut || 0;
+  var totalTok = totalTokIn + totalTokOut;
+  var cost = st.costUSD || 0;
+
+  $('u-req').textContent = fmt(totalReq);
+  $('u-tok').textContent = fmt(totalTok);
+  $('u-cost').textContent = '$' + cost.toFixed(4);
+
+  // Average latency
+  if (logs && logs.length) {
+    var totalLat = logs.reduce(function(s, l) { return s + (l.latencyMs || 0); }, 0);
+    $('u-lat').textContent = Math.round(totalLat / logs.length);
+  } else {
+    $('u-lat').textContent = '—';
+  }
+
+  // Requests by provider
+  var bp = st.byProvider || {};
+  var provEntries = Object.entries(bp).sort(function(a, b) { return b[1].requests - a[1].requests; });
+  var maxR = Math.max.apply(null, provEntries.map(function(e) { return e[1].requests; }).concat([1]));
+  var cols = ['#00d4ff','#7c3aed','#00e676','#ffd740','#ff9100','#ff5252'];
+  if (provEntries.length) {
+    $('u-prov-list').innerHTML = provEntries.map(function(pair, i) {
+      var name = pair[0], v = pair[1];
+      var w = Math.round(v.requests / maxR * 100);
+      var pct = totalReq ? Math.round(v.requests / totalReq * 100) : 0;
+      return '<div style="display:flex;align-items:center;gap:10px;font-size:12.5px">' +
+        '<span style="width:90px;font-weight:600;flex-shrink:0">' + esc(name) + '</span>' +
+        '<div style="flex:1;height:8px;background:var(--bd);border-radius:4px;overflow:hidden">' +
+        '<div style="height:100%;border-radius:4px;background:' + cols[i % cols.length] + ';width:' + w + '%;transition:width .5s"></div></div>' +
+        '<span style="width:60px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--mu)">' + v.requests + ' <span style="color:var(--mu);font-size:10px">(' + pct + '%)</span></span></div>';
+    }).join('');
+  } else {
+    $('u-prov-list').innerHTML = '<div style="color:var(--mu);font-size:12px">No data yet</div>';
+  }
+
+  // Token breakdown
+  var tokEntries = Object.entries(bp).filter(function(e) { return (e[1].tokensIn || 0) + (e[1].tokensOut || 0) > 0; });
+  tokEntries.sort(function(a, b) { return ((b[1].tokensIn||0)+(b[1].tokensOut||0)) - ((a[1].tokensIn||0)+(a[1].tokensOut||0)); });
+  var maxT = Math.max.apply(null, tokEntries.map(function(e) { return (e[1].tokensIn||0)+(e[1].tokensOut||0); }).concat([1]));
+  if (tokEntries.length) {
+    $('u-tok-chart').innerHTML = tokEntries.slice(0, 8).map(function(pair, i) {
+      var name = pair[0], v = pair[1];
+      var tIn = v.tokensIn || 0, tOut = v.tokensOut || 0, tTotal = tIn + tOut;
+      var w = Math.round(tTotal / maxT * 100);
+      return '<div style="display:flex;align-items:center;gap:10px;font-size:12.5px">' +
+        '<span style="width:90px;font-weight:600;flex-shrink:0">' + esc(name) + '</span>' +
+        '<div style="flex:1;height:8px;background:var(--bd);border-radius:4px;overflow:hidden;display:flex">' +
+        '<div style="height:100%;background:var(--ac);width:' + (tTotal ? Math.round(tIn/tTotal*100) : 0) + '%;transition:width .5s"></div>' +
+        '<div style="height:100%;background:var(--ac2);width:' + (tTotal ? Math.round(tOut/tTotal*100) : 0) + '%;transition:width .5s"></div></div>' +
+        '<span style="width:80px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--mu);font-size:11px">' + fmt(tIn) + ' / ' + fmt(tOut) + '</span></div>';
+    }).join('') + '<div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--mu)"><span>🔵 Input</span><span>🟣 Output</span></div>';
+  } else {
+    $('u-tok-chart').innerHTML = '<div style="color:var(--mu);font-size:12px">No data yet</div>';
+  }
+
+  // Timeline (from logs)
+  if (logs && logs.length) {
+    var groups = {};
+    logs.forEach(function(l) {
+      var d = new Date(l.ts);
+      var key = d.getHours().toString().padStart(2,'0') + ':00';
+      if (!groups[key]) groups[key] = {ok:0, err:0, warn:0, total:0};
+      groups[key].total++;
+      if (l.level === 'err') groups[key].err++;
+      else if (l.level === 'warn') groups[key].warn++;
+      else groups[key].ok++;
+    });
+    var sorted = Object.entries(groups).sort(function(a,b) { return a[0] > b[0] ? 1 : -1; });
+    var maxG = Math.max.apply(null, sorted.map(function(e) { return e[1].total; }).concat([1]));
+    $('u-timeline').innerHTML = sorted.map(function(pair) {
+      var hr = pair[0], g = pair[1];
+      var wOk = Math.round(g.ok / maxG * 100);
+      var wErr = Math.round(g.err / maxG * 100);
+      var wWarn = Math.round(g.warn / maxG * 100);
+      return '<div style="display:flex;align-items:center;gap:10px;font-size:12px">' +
+        '<span style="width:40px;font-family:JetBrains Mono,monospace;color:var(--mu)">' + hr + '</span>' +
+        '<div style="flex:1;height:10px;background:var(--bd);border-radius:5px;overflow:hidden;display:flex">' +
+        '<div style="width:' + wOk + '%;background:var(--gr);height:100%"></div>' +
+        '<div style="width:' + wWarn + '%;background:var(--ye);height:100%"></div>' +
+        '<div style="width:' + wErr + '%;background:var(--re);height:100%"></div></div>' +
+        '<span style="width:30px;text-align:right;color:var(--mu)">' + g.total + '</span></div>';
+    }).join('');
+  } else {
+    $('u-timeline').innerHTML = '<div style="color:var(--mu);font-size:12px;padding:16px;text-align:center">No requests logged yet</div>';
+  }
+
+  // Top models
+  var models = {};
+  if (logs) logs.forEach(function(l) {
+    var m = l.model || l.tag || 'unknown';
+    if (!models[m]) models[m] = {count:0, tokens:0};
+    models[m].count++;
+    models[m].tokens += l.tokens || 0;
+  });
+  var modelEntries = Object.entries(models).sort(function(a,b) { return b[1].count - a[1].count; });
+  if (modelEntries.length) {
+    $('u-models').innerHTML = modelEntries.slice(0, 8).map(function(pair, i) {
+      var m = pair[0], v = pair[1];
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:12.5px">' +
+        '<span style="display:flex;align-items:center;gap:8px"><span style="color:var(--mu);font-size:11px;width:18px">#' + (i+1) + '</span><span style="font-weight:600">' + esc(m) + '</span></span>' +
+        '<span style="color:var(--mu);font-family:JetBrains Mono,monospace">' + v.count + ' req</span></div>';
+    }).join('');
+  } else {
+    $('u-models').innerHTML = '<div style="color:var(--mu);font-size:12px">No data yet</div>';
+  }
+
+  // Recent errors
+  if (logs) {
+    var errs = logs.filter(function(l) { return l.level === 'err'; }).slice(0, 8);
+    if (errs.length) {
+      $('u-errors').innerHTML = errs.map(function(l) {
+        var t = new Date(l.ts).toLocaleTimeString('en-US', {hour12:false});
+        return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03)">' +
+          '<span style="color:var(--mu);flex-shrink:0;font-family:JetBrains Mono,monospace">' + t + '</span>' +
+          '<span style="color:var(--re)">' + esc(l.msg || '') + '</span></div>';
+      }).join('');
+    } else {
+      $('u-errors').innerHTML = '<div style="color:var(--gr);font-size:12px;padding:8px">✓ No errors</div>';
+    }
+  }
+}
+
+// ── Logs ──
+async function pollLogs() {
+  var logs = await api('/api/stats/logs?limit=30');
+  if (!logs) return;
+  allLogs = logs;
+  renderLogs($('dash-log'), logs.slice(0, 20));
+}
+async function loadLogs() {
+  var logs = await api('/api/stats/logs?limit=300');
+  if (!logs) return;
+  allLogs = logs;
+  filterLogs();
+}
+function filterLogs() {
+  var f = ($('log-filter') && $('log-filter').value) || '';
+  renderLogs($('full-log'), f ? allLogs.filter(function(l) { return l.level === f; }) : allLogs);
+}
+function clearLogView() { $('full-log').innerHTML = ''; }
+
+var LC = {ok:'lok', warn:'lw', err:'le2', info:'li'};
+var LT = {ok:'[OK]', warn:'[WARN]', err:'[ERR]', info:'[INFO]'};
+function renderLogs(el, logs) {
+  if (!el) return;
+  el.innerHTML = logs.map(function(l) {
+    var t = new Date(l.ts).toLocaleTimeString('en-US', {hour12:false});
+    var cls = LC[l.level] || 'li';
+    var tag = LT[l.level] || '[----]';
+    var lat = l.latencyMs ? ' <span style="color:var(--mu)">' + l.latencyMs + 'ms</span>' : '';
+    return '<div class="le"><span class="lt">' + t + '</span><span class="' + cls + '">' + tag + '</span><span class="lm">' + esc(l.tag||'') + ' <span style="color:var(--mu)">·</span> ' + esc(l.msg||'') + lat + '</span></div>';
+  }).join('');
+  el.scrollTop = 0;
+}
+
+// ── Providers ──
+var PICONS = {openrouter:'🌐',gemini:'🌀',groq:'🚀',cerebras:'⚛️',github:'🐙',nvidia:'🟢',anthropic:'🤖',openai:'⚡',deepseek:'🔭',glm:'🧠',kimi:'🌙',together:'🔗',qwen:'🌅'};
+var TCOL = {1:'bg', 2:'by', 3:'bmu'};
+var TLBL = {1:'Free', 2:'Cheap', 3:'Paid'};
+
+function provCard(p) {
+  var icon = PICONS[p.id] || '🔌';
+  var tierCls = TCOL[p.tier] || 'bmu';
+  var tierLbl = TLBL[p.tier] || ('T' + p.tier);
+  var freeBadge = p.free ? ' <span class="badge bg">FREE</span>' : '';
+  var price = (p.priceIn === 0 && p.priceOut === 0) ? '<span class="badge bg">Free</span>' : ('$' + p.priceIn + ' in / $' + p.priceOut + ' out');
+  var keyBadge = p.hasKey ? '<span class="badge bg">Set ✓</span>' : '<span class="badge br">Not set</span>';
+  var signupRow = (!p.hasKey && p.signupUrl) ? '<div class="prow"><label>Sign up</label><a href="' + esc(p.signupUrl) + '" target="_blank" style="color:var(--ac);font-size:12px">Get free key →</a></div>' : '';
+  var signupBtn = p.signupUrl ? '<a href="' + esc(p.signupUrl) + '" target="_blank" class="btn btn-g btn-sm">Sign up</a>' : '';
+  var placeholder = p.hasKey ? 'Update key…' : 'sk-… or key…';
+
+  return '<div class="pcard' + (p.free ? ' free-card' : '') + '" id="pc-' + p.id + '">' +
+    '<div class="ph"><div class="pav">' + icon + '</div><div style="flex:1"><div class="pn">' + esc(p.name) + '</div>' +
+    '<div class="pm">' + esc(p.prefix) + '/ <span class="badge ' + tierCls + '">' + tierLbl + '</span>' + freeBadge + '</div></div>' +
+    '<label class="tog"><input type="checkbox"' + (p.enabled ? ' checked' : '') + ' onchange="toggleProv(\'' + p.id + '\',this.checked)"><span class="tog-sl"></span></label></div>' +
+    '<div class="prow"><label>Model</label><span style="font-family:JetBrains Mono,monospace;font-size:11.5px">' + esc(p.defaultModel) + '</span></div>' +
+    '<div class="prow"><label>Price / 1M</label><span style="font-family:JetBrains Mono,monospace;font-size:11.5px">' + price + '</span></div>' +
+    '<div class="prow"><label>API Key</label>' + keyBadge + '</div>' + signupRow +
+    '<div style="margin-top:14px;display:flex;gap:8px"><input type="password" id="key-' + p.id + '" placeholder="' + placeholder + '" style="font-size:12px"><button class="btn btn-g btn-sm" onclick="saveProv(\'' + p.id + '\')">Save</button></div>' +
+    '<div class="pac"><button class="btn btn-g btn-sm" style="flex:1" onclick="testProv(\'' + p.id + '\')">🧪 Test</button>' + signupBtn + '</div>' +
+    '<div class="pmsg" id="pm-' + p.id + '"></div></div>';
+}
+
+async function loadProviders() {
+  var results = await Promise.all([api('/api/providers'), api('/api/free-providers')]);
+  var provs = results[0], free = results[1];
+  if (!provs) return;
+  allProviders = provs;
+  updateTierNames();
+
+  if (free) {
+    $('free-grid').innerHTML = free.map(function(f) {
+      var cls = f.hasKey ? ' has-key' : '';
+      var right = f.hasKey ? '<span class="badge bg">✓ Connected</span>' : '<a href="' + esc(f.signupUrl) + '" target="_blank" class="btn btn-g btn-sm" style="white-space:nowrap;font-size:11px">Sign up →</a>';
+      return '<div class="free-item' + cls + '"><div><div style="font-size:13px;font-weight:700">' + esc(f.name) + '</div><div style="font-size:11px;color:var(--mu);margin-top:2px">' + esc(f.notes || '') + '</div></div>' + right + '</div>';
+    }).join('');
+  }
+
+  $('prov-grid').innerHTML = provs.map(provCard).join('');
+}
+
+async function toggleProv(id, v) {
+  await api('/api/providers/' + id, {method:'PUT', body:{enabled:v}});
+  toast(v ? 'Enabled' : 'Disabled');
+}
+
+async function saveProv(id) {
+  var k = $('key-' + id) && $('key-' + id).value;
+  if (!k || !k.trim()) return;
+  await api('/api/providers/' + id, {method:'PUT', body:{apiKey:k.trim()}});
+  toast('✓ Key saved');
+  $('key-' + id).value = '';
+  setTimeout(loadProviders, 500);
+}
+
+async function testProv(id) {
+  pm(id, '⏳ Testing…', 'var(--mu)');
+  var r = await api('/api/providers/' + id + '/test', {method:'POST'});
+  if (!r) return;
+  pm(id, r.ok ? '✓ ' + r.message : '✗ ' + r.message, r.ok ? 'var(--gr)' : 'var(--re)');
+  if (r.ok) toast('✓ Connected');
+}
+
+function pm(id, msg, color) {
+  var el = $('pm-' + id);
+  if (el) { el.textContent = msg; el.style.color = color; }
+}
+
+// ── API Keys ──
+async function loadApiKeys() {
+  var keys = await api('/api/api-keys');
+  if (!keys) return;
+  var el = $('apikeys-list');
+  if (!keys.length) {
+    el.innerHTML = '<div style="color:var(--mu);font-size:13px;padding:24px;text-align:center">No API keys yet. Click "+ New Key" to create one.</div>';
+    return;
+  }
+  var rows = keys.map(function(k) {
+    var sb = k.enabled ? '<span class="badge bg">Active</span>' : '<span class="badge br">Disabled</span>';
+    var c = new Date(k.createdAt).toLocaleDateString();
+    var toggleLabel = k.enabled ? 'Disable' : 'Enable';
+    var toggleVal = k.enabled ? 'false' : 'true';
+    return '<tr style="border-bottom:1px solid rgba(255,255,255,.03)">' +
+      '<td style="padding:10px 8px;font-weight:600">' + esc(k.name) + '</td>' +
+      '<td style="padding:10px 8px;font-family:JetBrains Mono,monospace;color:var(--mu)">' + esc(k.keyPreview) + '</td>' +
+      '<td style="padding:10px 8px">' + sb + '</td>' +
+      '<td style="padding:10px 8px;font-family:JetBrains Mono,monospace">' + k.usageCount + ' req</td>' +
+      '<td style="padding:10px 8px;color:var(--mu)">' + c + '</td>' +
+      '<td style="padding:10px 8px"><div style="display:flex;gap:6px">' +
+      '<button class="btn btn-g btn-sm" onclick="toggleApiKey(\'' + k.id + '\',' + toggleVal + ')" style="font-size:11px">' + toggleLabel + '</button>' +
+      '<button class="btn btn-d btn-sm" onclick="deleteApiKey(\'' + k.id + '\',\'' + esc(k.name) + '\')" style="font-size:11px">Delete</button>' +
+      '</div></td></tr>';
+  }).join('');
+  el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="border-bottom:1px solid var(--bd);color:var(--mu);text-align:left"><th style="padding:10px 8px">Name</th><th style="padding:10px 8px">Key</th><th style="padding:10px 8px">Status</th><th style="padding:10px 8px">Used</th><th style="padding:10px 8px">Created</th><th style="padding:10px 8px">Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function showNewKeyForm() { $('newkey-form').style.display = 'block'; $('newkey-name').focus(); }
+function hideNewKeyForm() { $('newkey-form').style.display = 'none'; $('newkey-name').value = ''; }
+
+async function createApiKey() {
+  var name = $('newkey-name').value.trim();
+  if (!name) return;
+  var r = await api('/api/api-keys', {method:'POST', body:{name:name}});
+  if (!r) return;
+  $('newkey-form').style.display = 'none';
+  $('newkey-name').value = '';
+  $('newkey-display').style.display = 'block';
+  $('newkey-value').textContent = r.key;
+  toast('✓ Key created — copy it now!');
+  loadApiKeys();
+}
+
+function copyNewKey(btn) {
+  navigator.clipboard && navigator.clipboard.writeText($('newkey-value').textContent);
+  btn.textContent = 'Copied'; btn.style.color = 'var(--gr)';
+  setTimeout(function() { btn.textContent = '📋 Copy'; btn.style.color = ''; }, 2000);
+}
+
+async function toggleApiKey(id, enabled) {
+  await api('/api/api-keys/' + id, {method:'PUT', body:{enabled:enabled}});
+  loadApiKeys();
+  toast(enabled ? 'Enabled' : 'Disabled');
+}
+
+async function deleteApiKey(id, name) {
+  if (!confirm('Delete API key "' + name + '"? This cannot be undone.')) return;
+  await api('/api/api-keys/' + id, {method:'DELETE'});
+  loadApiKeys();
+  toast('Key deleted');
+}
+
+// ── Settings ──
+var SFIELDS = [
+  {k:'rtkEnabled', l:'RTK Compression', d:'Auto-trim git diff, grep, tree output (−20–40% tokens)'},
+  {k:'autoFallback', l:'Auto Fallback', d:'Move to next tier when quota exhausted'},
+  {k:'cavemanMode', l:'Caveman Mode', d:'Inject terse system prompt — shorter responses'},
+  {k:'logRequests', l:'Log All Requests', d:'Keep full request audit log'},
+  {k:'oauthAutoRefresh', l:'OAuth Auto-Refresh', d:'Keep OAuth tokens fresh automatically'},
+];
+
+async function loadSettings() {
+  settingsData = await api('/api/settings') || {};
+  $('sett-form').innerHTML = SFIELDS.map(function(f) {
+    var checked = settingsData[f.k] ? ' checked' : '';
+    return '<div class="sett-row"><div><div class="sett-name">' + f.l + '</div><div class="sett-desc">' + f.d + '</div></div><label class="tog"><input type="checkbox" id="s-' + f.k + '"' + checked + '><span class="tog-sl"></span></label></div>';
+  }).join('');
+
+  var connRows = [
+    ['Endpoint', location.origin + '/v1'],
+    ['Dashboard', location.origin],
+    ['Port', location.port || '20130'],
+    ['Auth', 'JWT Bearer (7d)'],
+    ['API Key Auth', 'Bearer token for /v1']
+  ];
+  $('conn-info').innerHTML = connRows.map(function(pair) {
+    return '<div class="prow"><label>' + pair[0] + '</label><span style="font-family:JetBrains Mono,monospace;font-size:11.5px;color:var(--ac)">' + esc(pair[1]) + '</span></div>';
+  }).join('');
+}
+
+async function saveSettings() {
+  var body = {};
+  SFIELDS.forEach(function(f) { body[f.k] = !!$('s-' + f.k) && $('s-' + f.k).checked; });
+  var r = await api('/api/settings', {method:'PUT', body:body});
+  $('sett-msg').style.color = r && r.ok ? 'var(--gr)' : 'var(--re)';
+  $('sett-msg').textContent = r && r.ok ? '✓ Saved' : '✗ Error';
+  if (r && r.ok) toast('Settings saved');
+}
+
+async function changePw() {
+  var r = await fetch('/auth/change-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({currentPassword:$('pw1').value, newPassword:$('pw2').value})}).then(function(x){return x.json()}).catch(function(){return {error:'Network error'}});
+  $('pw-msg').style.color = r.ok ? 'var(--gr)' : 'var(--re)';
+  $('pw-msg').textContent = r.ok ? '✓ Password updated' : r.error;
+  if (r.ok) { toast('Password updated'); $('pw1').value = ''; $('pw2').value = ''; }
+}
+
+// ── Misc ──
+function copyEp(btn) {
+  navigator.clipboard && navigator.clipboard.writeText($('ep-url').textContent);
+  btn.textContent = '✓ Copied'; btn.style.color = 'var(--gr)';
+  setTimeout(function() { btn.textContent = '📋 Copy'; btn.style.color = ''; }, 2000);
+}
+
+</script>
+</body>
+</html>

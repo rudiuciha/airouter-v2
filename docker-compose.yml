@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  airouter:
+    build: .
+    container_name: airouter
+    restart: unless-stopped
+    ports:
+      - "20128:20128"
+    env_file: .env
+    volumes:
+      - airouter_data:/app/data
+volumes:
+  airouter_data:
