@@ -206,6 +206,35 @@ code{background:var(--bg3);padding:2px 8px;border-radius:5px;font-family:'JetBra
 
 
 
+/* ── TAB SWITCHER ── */
+.tab-btn{display:inline-flex;align-items:center;padding:9px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;background:var(--bg3);color:var(--mu);border:1px solid var(--bd);cursor:pointer;transition:var(--transition)}
+.tab-btn:hover{color:var(--tx);border-color:rgba(0,0,0,.12)}
+.tab-btn.active{background:rgba(140,100,60,.08);color:#8a6030;border-color:rgba(140,100,60,.25);box-shadow:0 0 12px rgba(140,100,60,.1)}
+
+/* ── PERIOD SELECTOR ── */
+.period-btn{display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--bg3);color:var(--mu);border:1px solid var(--bd);cursor:pointer;transition:var(--transition)}
+.period-btn:hover{color:var(--tx);border-color:rgba(0,0,0,.12)}
+.period-btn.active{background:rgba(0,212,255,.1);color:var(--ac);border-color:rgba(0,212,255,.25)}
+
+/* ── DETAIL MODAL ── */
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.detail-section{margin-bottom:18px}
+.detail-section h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.detail-pre{max-height:250px;overflow:auto;border-radius:8px;border:1px solid var(--bd);padding:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.02);word-break:break-all;white-space:pre-wrap}
+.detail-row{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04);font-size:12.5px}
+.detail-row:last-child{border-bottom:none}
+.detail-row .dl{color:var(--mu);min-width:120px;flex-shrink:0}
+.detail-row .dv{font-weight:600}
+.detail-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:10.5px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.detail-tag.ok{background:rgba(0,230,118,.1);color:var(--gr);border:1px solid rgba(0,230,118,.2)}
+.detail-tag.err{background:rgba(255,82,82,.1);color:var(--re);border:1px solid rgba(255,82,82,.2)}
+
+/* ── PAGINATION ── */
+.page-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--mu);border:1px solid transparent;cursor:pointer;transition:var(--transition)}
+.page-btn:hover{background:var(--bg3);color:var(--tx)}
+.page-btn.active{background:rgba(0,212,255,.1);color:var(--ac);border-color:rgba(0,212,255,.25)}
+.page-btn:disabled{opacity:.3;cursor:not-allowed}
+
 @media(max-width:700px){
 .hamburger{display:flex}
 .sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:100;width:250px;transition:left .3s ease}
@@ -384,47 +413,116 @@ code{background:var(--bg3);padding:2px 8px;border-radius:5px;font-family:'JetBra
 
       <!-- USAGE -->
       <div id="page-usage" class="page">
-        <div class="srow" style="margin-bottom:20px">
-          <div class="sc bl"><div class="slbl">Total Requests</div><div class="sval" id="u-req">—</div><div class="ssub">Since startup</div></div>
-          <div class="sc pu"><div class="slbl">Total Tokens</div><div class="sval" id="u-tok">—</div><div class="ssub">Input + Output</div></div>
-          <div class="sc gr"><div class="slbl">Avg Latency</div><div class="sval" id="u-lat">—</div><div class="ssub">ms per request</div></div>
-          <div class="sc ye"><div class="slbl">Est. Cost</div><div class="sval" id="u-cost">—</div><div class="ssub">USD this session</div></div>
+        <!-- Tab Switcher -->
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <button class="tab-btn active" id="tab-overview" onclick="switchUsageTab('overview')">Overview</button>
+          <button class="tab-btn" id="tab-details" onclick="switchUsageTab('details')">Details</button>
         </div>
 
-        <div class="g2">
-          <div class="card">
-            <div class="ch"><div class="ct">📊 Requests by Provider</div></div>
-            <div id="u-prov-list" style="display:flex;flex-direction:column;gap:8px"></div>
-          </div>
-          <div class="card">
-            <div class="ch"><div class="ct">📈 Token Breakdown</div></div>
-            <div id="u-tok-chart" style="display:flex;flex-direction:column;gap:8px"></div>
-          </div>
+        <!-- Time Period Selector -->
+        <div id="usage-period-bar" style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+          <button class="period-btn active" data-period="today" onclick="setUsagePeriod('today',this)">Today</button>
+          <button class="period-btn" data-period="24h" onclick="setUsagePeriod('24h',this)">24h</button>
+          <button class="period-btn" data-period="7d" onclick="setUsagePeriod('7d',this)">7D</button>
+          <button class="period-btn" data-period="30d" onclick="setUsagePeriod('30d',this)">30D</button>
+          <button class="period-btn" data-period="60d" onclick="setUsagePeriod('60d',this)">60D</button>
         </div>
 
-        <div class="card" style="margin-top:18px">
-          <div class="ch"><div class="ct">⏱️ Request History</div>
-            <div style="display:flex;gap:8px">
-              <select id="u-time" style="width:auto;padding:6px 12px;font-size:12px" onchange="loadUsage()">
-                <option value="1h">Last 1 hour</option>
-                <option value="6h">Last 6 hours</option>
-                <option value="24h" selected>Last 24 hours</option>
-                <option value="7d">Last 7 days</option>
-              </select>
+        <!-- OVERVIEW TAB -->
+        <div id="usage-overview">
+          <div class="srow" style="margin-bottom:20px">
+            <div class="sc bl"><div class="slbl">Total Requests</div><div class="sval" id="u-req">—</div><div class="ssub" id="u-req-sub">This session</div></div>
+            <div class="sc pu"><div class="slbl">Total Tokens</div><div class="sval" id="u-tok">—</div><div class="ssub">Input + Output</div></div>
+            <div class="sc gr"><div class="slbl">Avg Latency</div><div class="sval" id="u-lat">—</div><div class="ssub">ms per request</div></div>
+            <div class="sc ye"><div class="slbl">Est. Cost</div><div class="sval" id="u-cost">—</div><div class="ssub" id="u-cost-sub">USD this session</div></div>
+          </div>
+
+          <div class="g2">
+            <div class="card">
+              <div class="ch"><div class="ct">📊 Requests by Provider</div></div>
+              <div id="u-prov-list" style="display:flex;flex-direction:column;gap:8px"></div>
+            </div>
+            <div class="card">
+              <div class="ch"><div class="ct">📈 Token Breakdown</div></div>
+              <div id="u-tok-chart" style="display:flex;flex-direction:column;gap:8px"></div>
             </div>
           </div>
-          <div id="u-timeline" style="display:flex;flex-direction:column;gap:6px"></div>
+
+          <div class="card" style="margin-top:18px">
+            <div class="ch"><div class="ct">⏱️ Request History</div></div>
+            <div id="u-timeline" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+
+          <div class="g2" style="margin-top:18px">
+            <div class="card">
+              <div class="ch"><div class="ct">🏆 Top Models</div></div>
+              <div id="u-models" style="display:flex;flex-direction:column;gap:6px"></div>
+            </div>
+            <div class="card">
+              <div class="ch"><div class="ct">📋 Recent Errors</div></div>
+              <div id="u-errors" style="display:flex;flex-direction:column;gap:4px;font-size:12px"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="g2" style="margin-top:18px">
-          <div class="card">
-            <div class="ch"><div class="ct">🏆 Top Models</div></div>
-            <div id="u-models" style="display:flex;flex-direction:column;gap:6px"></div>
+        <!-- DETAILS TAB (9router-style table) -->
+        <div id="usage-details" style="display:none">
+          <!-- Filter Bar -->
+          <div class="card" style="margin-bottom:18px">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+              <div style="flex:1;min-width:160px">
+                <label style="font-size:12px;font-weight:600;color:var(--mu);display:block;margin-bottom:4px">Provider</label>
+                <select id="u-filter-provider" style="width:100%" onchange="loadUsageDetails()">
+                  <option value="">All Providers</option>
+                </select>
+              </div>
+              <div style="flex:1;min-width:180px">
+                <label style="font-size:12px;font-weight:600;color:var(--mu);display:block;margin-bottom:4px">Start Date</label>
+                <input type="datetime-local" id="u-filter-start" style="width:100%" onchange="loadUsageDetails()">
+              </div>
+              <div style="flex:1;min-width:180px">
+                <label style="font-size:12px;font-weight:600;color:var(--mu);display:block;margin-bottom:4px">End Date</label>
+                <input type="datetime-local" id="u-filter-end" style="width:100%" onchange="loadUsageDetails()">
+              </div>
+              <button class="btn btn-g btn-sm" onclick="clearUsageFilters()">Clear Filters</button>
+            </div>
           </div>
-          <div class="card">
-            <div class="ch"><div class="ct">📋 Recent Errors</div></div>
-            <div id="u-errors" style="display:flex;flex-direction:column;gap:4px;font-size:12px"></div>
+
+          <!-- Request Details Table -->
+          <div class="card" style="padding:0;overflow:hidden">
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;min-width:880px">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--bd)">
+                    <th style="text-align:left;padding:14px 16px;font-size:12.5px;font-weight:700;color:var(--mu)">Timestamp</th>
+                    <th style="text-align:left;padding:14px 16px;font-size:12.5px;font-weight:700;color:var(--mu)">Model</th>
+                    <th style="text-align:left;padding:14px 16px;font-size:12.5px;font-weight:700;color:var(--mu)">Provider</th>
+                    <th style="text-align:right;padding:14px 16px;font-size:12.5px;font-weight:700;color:var(--mu)">Input Tokens</th>
+                    <th style="text-align:right;padding:14px 16px;font-size:12.5px;font-weight:700;color:var(--mu)">Output Tokens</th>
+                    <th style="text-align:left;padding:14px 16px;font-size:12.5px;font-weight:700;color:var(--mu)">Latency</th>
+                    <th style="text-align:center;padding:14px 16px;font-size:12.5px;font-weight:700;color:var(--mu)">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="u-detail-rows">
+                  <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--mu)">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- Pagination -->
+            <div id="u-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-top:1px solid var(--bd);font-size:12.5px;color:var(--mu)"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- REQUEST DETAIL MODAL -->
+      <div id="req-modal" style="display:none;position:fixed;inset:0;z-index:200" onclick="if(event.target===this)closeReqModal()">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)"></div>
+        <div style="position:absolute;right:0;top:0;height:100%;width:min(85vw,700px);background:var(--bg2);border-left:1px solid var(--bd);overflow-y:auto;animation:slideIn .25s ease">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--bg2);z-index:1">
+            <h3 style="font-size:16px;font-weight:800">Request Details</h3>
+            <button onclick="closeReqModal()" style="background:none;font-size:20px;color:var(--mu);cursor:pointer;border:none">✕</button>
+          </div>
+          <div id="req-modal-body" style="padding:24px"></div>
         </div>
       </div>
 
@@ -524,7 +622,7 @@ var titles = {
   dash: ['Dashboard','Real-time routing monitor'],
   provs: ['Providers','Manage provider API keys'],
   apikeys: ['API Keys','Manage proxy access keys'],
-  usage: ['Usage','Token & request analytics'],
+  usage: ['Usage & Analytics','Monitor API usage, token consumption, and request logs'],
   logs: ['Request Log','Full audit trail'],
   settings: ['Settings','Configure behavior']
 };
@@ -601,31 +699,94 @@ function updateTierNames() {
 
 
 // ── Usage ──
+let usageTab = 'overview';
+let usagePeriod = 'today';
+let usagePage = 1;
+let usagePageSize = 20;
+let usageDetailsCache = [];
+
+function switchUsageTab(tab) {
+  usageTab = tab;
+  $('tab-overview').classList.toggle('active', tab === 'overview');
+  $('tab-details').classList.toggle('active', tab === 'details');
+  $('usage-overview').style.display = tab === 'overview' ? '' : 'none';
+  $('usage-details').style.display = tab === 'details' ? '' : 'none';
+  $('usage-period-bar').style.display = tab === 'overview' ? 'flex' : 'none';
+  if (tab === 'details') loadUsageDetails();
+}
+
+function setUsagePeriod(period, el) {
+  usagePeriod = period;
+  document.querySelectorAll('.period-btn').forEach(function(btn) { btn.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  loadUsage();
+}
+
+function getPeriodRange(period) {
+  const now = new Date();
+  const start = new Date(now);
+  if (period === 'today') start.setHours(0,0,0,0);
+  else if (period === '24h') start.setTime(now.getTime() - 24 * 60 * 60 * 1000);
+  else if (period === '7d') start.setTime(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  else if (period === '30d') start.setTime(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  else if (period === '60d') start.setTime(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  return { start: start, end: now };
+}
+
+function filterLogsByPeriod(logs, period) {
+  const range = getPeriodRange(period);
+  return (logs || []).filter(function(l) {
+    const ts = new Date(l.ts || l.timestamp || Date.now());
+    return ts >= range.start && ts <= range.end;
+  });
+}
+
+async function loadUsageProviders() {
+  const data = await api('/api/usage/providers');
+  if (!data || !data.providers) return;
+  const sel = $('u-filter-provider');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All Providers</option>' + data.providers.map(function(p) {
+    return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>';
+  }).join('');
+}
+
 async function loadUsage() {
   var results = await Promise.all([api('/api/stats'), api('/api/stats/logs?limit=500')]);
-  var st = results[0], logs = results[1];
+  var st = results[0], rawLogs = results[1];
   if (!st) return;
 
-  var totalReq = st.totalRequests || 0;
-  var totalTokIn = st.totalTokensIn || 0;
-  var totalTokOut = st.totalTokensOut || 0;
+  var logs = filterLogsByPeriod(rawLogs || [], usagePeriod);
+  var totalReq = logs.length;
+  var totalTokIn = logs.reduce(function(s, l) { return s + (l.tokensIn || 0); }, 0);
+  var totalTokOut = logs.reduce(function(s, l) { return s + (l.tokensOut || 0); }, 0);
   var totalTok = totalTokIn + totalTokOut;
-  var cost = st.costUSD || 0;
+  var cost = logs.reduce(function(s, l) {
+    return s + ((l.costUSD || l.cost || 0));
+  }, 0);
 
   $('u-req').textContent = fmt(totalReq);
   $('u-tok').textContent = fmt(totalTok);
-  $('u-cost').textContent = '$' + cost.toFixed(4);
+  $('u-cost').textContent = '$' + Number(cost || 0).toFixed(4);
+  $('u-req-sub').textContent = usagePeriod === 'today' ? 'Today' : usagePeriod.toUpperCase();
+  $('u-cost-sub').textContent = 'USD in ' + (usagePeriod === 'today' ? 'today' : usagePeriod.toUpperCase());
 
-  // Average latency
-  if (logs && logs.length) {
+  if (logs.length) {
     var totalLat = logs.reduce(function(s, l) { return s + (l.latencyMs || 0); }, 0);
     $('u-lat').textContent = Math.round(totalLat / logs.length);
   } else {
     $('u-lat').textContent = '—';
   }
 
-  // Requests by provider
-  var bp = st.byProvider || {};
+  var bp = {};
+  logs.forEach(function(l) {
+    var key = l.provider || 'unknown';
+    if (!bp[key]) bp[key] = { requests:0, tokensIn:0, tokensOut:0 };
+    bp[key].requests++;
+    bp[key].tokensIn += l.tokensIn || 0;
+    bp[key].tokensOut += l.tokensOut || 0;
+  });
+
   var provEntries = Object.entries(bp).sort(function(a, b) { return b[1].requests - a[1].requests; });
   var maxR = Math.max.apply(null, provEntries.map(function(e) { return e[1].requests; }).concat([1]));
   var cols = ['#00d4ff','#7c3aed','#00e676','#ffd740','#ff9100','#ff5252'];
@@ -635,7 +796,7 @@ async function loadUsage() {
       var w = Math.round(v.requests / maxR * 100);
       var pct = totalReq ? Math.round(v.requests / totalReq * 100) : 0;
       return '<div style="display:flex;align-items:center;gap:10px;font-size:12.5px">' +
-        '<span style="width:90px;font-weight:600;flex-shrink:0">' + esc(name) + '</span>' +
+        '<span style="width:110px;font-weight:600;flex-shrink:0">' + esc(name) + '</span>' +
         '<div style="flex:1;height:8px;background:var(--bd);border-radius:4px;overflow:hidden">' +
         '<div style="height:100%;border-radius:4px;background:' + cols[i % cols.length] + ';width:' + w + '%;transition:width .5s"></div></div>' +
         '<span style="width:60px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--mu)">' + v.requests + ' <span style="color:var(--mu);font-size:10px">(' + pct + '%)</span></span></div>';
@@ -644,32 +805,31 @@ async function loadUsage() {
     $('u-prov-list').innerHTML = '<div style="color:var(--mu);font-size:12px">No data yet</div>';
   }
 
-  // Token breakdown
   var tokEntries = Object.entries(bp).filter(function(e) { return (e[1].tokensIn || 0) + (e[1].tokensOut || 0) > 0; });
   tokEntries.sort(function(a, b) { return ((b[1].tokensIn||0)+(b[1].tokensOut||0)) - ((a[1].tokensIn||0)+(a[1].tokensOut||0)); });
   var maxT = Math.max.apply(null, tokEntries.map(function(e) { return (e[1].tokensIn||0)+(e[1].tokensOut||0); }).concat([1]));
   if (tokEntries.length) {
-    $('u-tok-chart').innerHTML = tokEntries.slice(0, 8).map(function(pair, i) {
+    $('u-tok-chart').innerHTML = tokEntries.slice(0, 8).map(function(pair) {
       var name = pair[0], v = pair[1];
       var tIn = v.tokensIn || 0, tOut = v.tokensOut || 0, tTotal = tIn + tOut;
-      var w = Math.round(tTotal / maxT * 100);
       return '<div style="display:flex;align-items:center;gap:10px;font-size:12.5px">' +
-        '<span style="width:90px;font-weight:600;flex-shrink:0">' + esc(name) + '</span>' +
+        '<span style="width:110px;font-weight:600;flex-shrink:0">' + esc(name) + '</span>' +
         '<div style="flex:1;height:8px;background:var(--bd);border-radius:4px;overflow:hidden;display:flex">' +
         '<div style="height:100%;background:var(--ac);width:' + (tTotal ? Math.round(tIn/tTotal*100) : 0) + '%;transition:width .5s"></div>' +
         '<div style="height:100%;background:var(--ac2);width:' + (tTotal ? Math.round(tOut/tTotal*100) : 0) + '%;transition:width .5s"></div></div>' +
-        '<span style="width:80px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--mu);font-size:11px">' + fmt(tIn) + ' / ' + fmt(tOut) + '</span></div>';
+        '<span style="width:90px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--mu);font-size:11px">' + fmt(tIn) + ' / ' + fmt(tOut) + '</span></div>';
     }).join('') + '<div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--mu)"><span>🔵 Input</span><span>🟣 Output</span></div>';
   } else {
     $('u-tok-chart').innerHTML = '<div style="color:var(--mu);font-size:12px">No data yet</div>';
   }
 
-  // Timeline (from logs)
-  if (logs && logs.length) {
+  if (logs.length) {
     var groups = {};
     logs.forEach(function(l) {
-      var d = new Date(l.ts);
-      var key = d.getHours().toString().padStart(2,'0') + ':00';
+      var d = new Date(l.ts || Date.now());
+      var key = usagePeriod === 'today' || usagePeriod === '24h'
+        ? d.getHours().toString().padStart(2,'0') + ':00'
+        : (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getDate().toString().padStart(2,'0');
       if (!groups[key]) groups[key] = {ok:0, err:0, warn:0, total:0};
       groups[key].total++;
       if (l.level === 'err') groups[key].err++;
@@ -684,7 +844,7 @@ async function loadUsage() {
       var wErr = Math.round(g.err / maxG * 100);
       var wWarn = Math.round(g.warn / maxG * 100);
       return '<div style="display:flex;align-items:center;gap:10px;font-size:12px">' +
-        '<span style="width:40px;font-family:JetBrains Mono,monospace;color:var(--mu)">' + hr + '</span>' +
+        '<span style="width:54px;font-family:JetBrains Mono,monospace;color:var(--mu)">' + hr + '</span>' +
         '<div style="flex:1;height:10px;background:var(--bd);border-radius:5px;overflow:hidden;display:flex">' +
         '<div style="width:' + wOk + '%;background:var(--gr);height:100%"></div>' +
         '<div style="width:' + wWarn + '%;background:var(--ye);height:100%"></div>' +
@@ -695,13 +855,11 @@ async function loadUsage() {
     $('u-timeline').innerHTML = '<div style="color:var(--mu);font-size:12px;padding:16px;text-align:center">No requests logged yet</div>';
   }
 
-  // Top models
   var models = {};
-  if (logs) logs.forEach(function(l) {
+  logs.forEach(function(l) {
     var m = l.model || l.tag || 'unknown';
-    if (!models[m]) models[m] = {count:0, tokens:0};
+    if (!models[m]) models[m] = {count:0};
     models[m].count++;
-    models[m].tokens += l.tokens || 0;
   });
   var modelEntries = Object.entries(models).sort(function(a,b) { return b[1].count - a[1].count; });
   if (modelEntries.length) {
@@ -715,20 +873,116 @@ async function loadUsage() {
     $('u-models').innerHTML = '<div style="color:var(--mu);font-size:12px">No data yet</div>';
   }
 
-  // Recent errors
-  if (logs) {
-    var errs = logs.filter(function(l) { return l.level === 'err'; }).slice(0, 8);
-    if (errs.length) {
-      $('u-errors').innerHTML = errs.map(function(l) {
-        var t = new Date(l.ts).toLocaleTimeString('en-US', {hour12:false});
-        return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03)">' +
-          '<span style="color:var(--mu);flex-shrink:0;font-family:JetBrains Mono,monospace">' + t + '</span>' +
-          '<span style="color:var(--re)">' + esc(l.msg || '') + '</span></div>';
-      }).join('');
-    } else {
-      $('u-errors').innerHTML = '<div style="color:var(--gr);font-size:12px;padding:8px">✓ No errors</div>';
-    }
+  var errs = logs.filter(function(l) { return l.level === 'err'; }).slice(0, 8);
+  if (errs.length) {
+    $('u-errors').innerHTML = errs.map(function(l) {
+      var t = new Date(l.ts || Date.now()).toLocaleTimeString('en-US', {hour12:false});
+      return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03)">' +
+        '<span style="color:var(--mu);flex-shrink:0;font-family:JetBrains Mono,monospace">' + t + '</span>' +
+        '<span style="color:var(--re)">' + esc(l.msg || '') + '</span></div>';
+    }).join('');
+  } else {
+    $('u-errors').innerHTML = '<div style="color:var(--gr);font-size:12px;padding:8px">✓ No errors</div>';
   }
+
+  await loadUsageProviders();
+  if (usageTab === 'details') await loadUsageDetails();
+}
+
+async function loadUsageDetails() {
+  const provider = ($('u-filter-provider') && $('u-filter-provider').value) || '';
+  const startDate = ($('u-filter-start') && $('u-filter-start').value) || '';
+  const endDate = ($('u-filter-end') && $('u-filter-end').value) || '';
+  let qs = '?page=' + usagePage + '&pageSize=' + usagePageSize;
+  if (provider) qs += '&provider=' + encodeURIComponent(provider);
+  if (startDate) qs += '&startDate=' + encodeURIComponent(startDate);
+  if (endDate) qs += '&endDate=' + encodeURIComponent(endDate);
+  const data = await api('/api/usage/request-details' + qs);
+  if (!data) return;
+  usageDetailsCache = data.details || [];
+  renderUsageDetails(data.details || []);
+  renderUsagePagination(data.pagination || { page:1, pageSize:20, totalItems:0, totalPages:1 });
+}
+
+function renderUsageDetails(rows) {
+  const el = $('u-detail-rows');
+  if (!rows.length) {
+    el.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--mu)">No request details found</td></tr>';
+    return;
+  }
+  el.innerHTML = rows.map(function(r, idx) {
+    const ts = new Date(r.timestamp).toLocaleString();
+    const input = (r.tokens && r.tokens.prompt_tokens) || 0;
+    const output = (r.tokens && r.tokens.completion_tokens) || 0;
+    const ttft = (r.latency && r.latency.ttft) || 0;
+    const total = (r.latency && r.latency.total) || 0;
+    return '<tr style="border-bottom:1px solid var(--bd)">' +
+      '<td style="padding:14px 16px;font-size:12.5px">' + esc(ts) + '</td>' +
+      '<td style="padding:14px 16px;font-size:12.5px;font-family:JetBrains Mono,monospace;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.model || '') + '</td>' +
+      '<td style="padding:14px 16px;font-size:12.5px">' + esc(r.provider || '') + '</td>' +
+      '<td style="padding:14px 16px;font-size:12.5px;text-align:right;font-family:JetBrains Mono,monospace">' + Number(input).toLocaleString() + '</td>' +
+      '<td style="padding:14px 16px;font-size:12.5px;text-align:right;font-family:JetBrains Mono,monospace">' + Number(output).toLocaleString() + '</td>' +
+      '<td style="padding:14px 16px;font-size:12.5px;color:var(--mu)">TTFT: <span style="font-family:JetBrains Mono,monospace">' + ttft + 'ms</span><br>Total: <span style="font-family:JetBrains Mono,monospace">' + total + 'ms</span></td>' +
+      '<td style="padding:14px 16px;text-align:center"><button class="btn btn-g btn-sm" onclick="openReqModal(' + idx + ')">Detail</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderUsagePagination(p) {
+  const el = $('u-pagination');
+  const start = p.totalItems ? ((p.page - 1) * p.pageSize + 1) : 0;
+  const end = Math.min(p.page * p.pageSize, p.totalItems || 0);
+  let pages = '';
+  for (let i = 1; i <= (p.totalPages || 1); i++) {
+    if (i > 5 && Math.abs(i - p.page) > 1 && i !== 1 && i !== p.totalPages) continue;
+    pages += '<button class="page-btn ' + (i === p.page ? 'active' : '') + '" onclick="goUsagePage(' + i + ')">' + i + '</button>';
+  }
+  el.innerHTML = '<div>Showing <b>' + start + '</b> to <b>' + end + '</b> of <b>' + (p.totalItems || 0) + '</b> results</div>' +
+    '<div style="display:flex;align-items:center;gap:6px">' +
+    '<button class="page-btn" ' + (p.page <= 1 ? 'disabled' : '') + ' onclick="goUsagePage(' + (p.page - 1) + ')">‹</button>' +
+    pages +
+    '<button class="page-btn" ' + (p.page >= p.totalPages ? 'disabled' : '') + ' onclick="goUsagePage(' + (p.page + 1) + ')">›</button>' +
+    '</div>';
+}
+
+function goUsagePage(page) {
+  if (page < 1) return;
+  usagePage = page;
+  loadUsageDetails();
+}
+
+function clearUsageFilters() {
+  if ($('u-filter-provider')) $('u-filter-provider').value = '';
+  if ($('u-filter-start')) $('u-filter-start').value = '';
+  if ($('u-filter-end')) $('u-filter-end').value = '';
+  usagePage = 1;
+  loadUsageDetails();
+}
+
+function openReqModal(idx) {
+  const r = usageDetailsCache[idx];
+  if (!r) return;
+  const input = (r.tokens && r.tokens.prompt_tokens) || 0;
+  const output = (r.tokens && r.tokens.completion_tokens) || 0;
+  const statusCls = r.status === 'error' ? 'err' : 'ok';
+  $('req-modal-body').innerHTML =
+    '<div class="detail-section">' +
+      '<div class="detail-row"><div class="dl">ID</div><div class="dv">' + esc(r.id || '') + '</div></div>' +
+      '<div class="detail-row"><div class="dl">Timestamp</div><div class="dv">' + esc(new Date(r.timestamp).toLocaleString()) + '</div></div>' +
+      '<div class="detail-row"><div class="dl">Provider</div><div class="dv">' + esc(r.provider || '') + '</div></div>' +
+      '<div class="detail-row"><div class="dl">Model</div><div class="dv" style="font-family:JetBrains Mono,monospace">' + esc(r.model || '') + '</div></div>' +
+      '<div class="detail-row"><div class="dl">Status</div><div class="dv"><span class="detail-tag ' + statusCls + '">' + esc(r.status || '') + '</span></div></div>' +
+      '<div class="detail-row"><div class="dl">Latency</div><div class="dv" style="font-family:JetBrains Mono,monospace">TTFT ' + ((r.latency && r.latency.ttft) || 0) + 'ms / Total ' + ((r.latency && r.latency.total) || 0) + 'ms</div></div>' +
+      '<div class="detail-row"><div class="dl">Input Tokens</div><div class="dv" style="font-family:JetBrains Mono,monospace">' + Number(input).toLocaleString() + '</div></div>' +
+      '<div class="detail-row"><div class="dl">Output Tokens</div><div class="dv" style="font-family:JetBrains Mono,monospace">' + Number(output).toLocaleString() + '</div></div>' +
+    '</div>' +
+    '<div class="detail-section"><h4>1. Logged Request</h4><pre class="detail-pre">' + esc(JSON.stringify(r.request || {}, null, 2)) + '</pre></div>' +
+    '<div class="detail-section"><h4>2. Logged Response</h4><pre class="detail-pre">' + esc(JSON.stringify(r.response || {}, null, 2)) + '</pre></div>';
+  $('req-modal').style.display = 'block';
+}
+
+function closeReqModal() {
+  $('req-modal').style.display = 'none';
 }
 
 // ── Logs ──

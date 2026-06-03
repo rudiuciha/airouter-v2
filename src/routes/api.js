@@ -40,6 +40,59 @@ router.get('/stats/logs', (req, res) => {
   res.json(logs.slice(0, limit));
 });
 
+router.get('/usage/providers', (req, res) => {
+  const providers = read('providers') || [];
+  res.json({ providers: providers.map(p => ({ id: p.id, name: p.name })) });
+});
+
+router.get('/usage/request-details', (req, res) => {
+  const logs = read('logs') || [];
+  const page = Math.max(parseInt(req.query.page)||1, 1);
+  const pageSize = Math.min(Math.max(parseInt(req.query.pageSize)||20, 1), 100);
+  const provider = (req.query.provider || '').trim();
+  const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+  const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
+
+  let rows = logs
+    .filter(l => l.provider || l.model || l.tokensIn || l.tokensOut || l.latencyMs)
+    .map((l, idx) => ({
+      id: String(idx + 1),
+      timestamp: l.ts || new Date().toISOString(),
+      provider: l.provider || 'system',
+      model: l.model || l.tag || 'unknown',
+      status: l.level === 'err' ? 'error' : 'success',
+      tokens: {
+        prompt_tokens: l.tokensIn || 0,
+        completion_tokens: l.tokensOut || 0,
+      },
+      latency: {
+        ttft: l.latencyMs || 0,
+        total: l.latencyMs || 0,
+      },
+      request: {
+        tag: l.tag || '',
+        message: l.msg || '',
+      },
+      response: {
+        content: l.msg || '',
+      },
+    }));
+
+  if (provider) rows = rows.filter(r => r.provider === provider);
+  if (startDate && !isNaN(startDate)) rows = rows.filter(r => new Date(r.timestamp) >= startDate);
+  if (endDate && !isNaN(endDate)) rows = rows.filter(r => new Date(r.timestamp) <= endDate);
+
+  const totalItems = rows.length;
+  const totalPages = Math.max(Math.ceil(totalItems / pageSize), 1);
+  const start = (page - 1) * pageSize;
+  const details = rows.slice(start, start + pageSize);
+
+  res.json({
+    details,
+    pagination: { page, pageSize, totalItems, totalPages }
+  });
+});
+
 // ── Providers ────────────────────────────────────────────────────
 router.get('/providers', (req, res) => {
   const providers = read('providers') || [];
